@@ -1,13 +1,13 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { MMKV } = require('react-native-mmkv');
 const storage = new MMKV();
 
-const mmkvStorage = {
+const mmkvStorage: StateStorage = {
   getItem: (name: string) => {
-    const value = storage.getString(name);
-    return value ?? null;
+    return storage.getString(name) ?? null;
   },
   setItem: (name: string, value: string) => {
     storage.set(name, value);
