@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Stip Go",
+    "slug": "stip-go",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D1A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.stipgo.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Stip Go utilise ta position pour créer des stamps sur ta carte du monde.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Stip Go utilise ta position en arrière-plan pour détecter automatiquement tes stamps.",
+        "NSMicrophoneUsageDescription": "Stip Go utilise le micro pour les messages vocaux.",
+        "NSCameraUsageDescription": "Stip Go utilise la caméra pour les photos de profil et les stamps."
+      }
+    },
+    "android": {
+      "package": "com.stipgo.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0D1A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      "expo-location",
+      "expo-notifications",
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Stip Go utilise le micro pour les messages vocaux."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

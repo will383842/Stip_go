@@ -1,0 +1,35 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "done": "Terminé"
+  },
+  "auth": {
+    "welcome": "Bienvenue",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithApple": "Continuer avec Apple",
+    "birthYear": "Année de naissance",
+    "birthYearPlaceholder": "Ex: 2005"
+  },
+  "map": {
+    "title": "Carte",
+    "stampPress": "Appuie long pour tamponner"
+  },
+  "passport": {
+    "title": "Passeport",
+    "level": "Niveau {{level}}",
+    "stamps": "{{count}} stamps"
+  },
+  "profile": {
+    "title": "Profil",
+    "settings": "Paramètres",
+    "invisibleMode": "Mode invisible"
+  }
+}

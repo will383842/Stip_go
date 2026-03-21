@@ -1,0 +1,35 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done"
+  },
+  "auth": {
+    "welcome": "Welcome",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "birthYear": "Birth year",
+    "birthYearPlaceholder": "E.g. 2005"
+  },
+  "map": {
+    "title": "Map",
+    "stampPress": "Long press to stamp"
+  },
+  "passport": {
+    "title": "Passport",
+    "level": "Level {{level}}",
+    "stamps": "{{count}} stamps"
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "invisibleMode": "Invisible mode"
+  }
+}

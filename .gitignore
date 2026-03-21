@@ -1,0 +1,43 @@
+# Dependencies
+backend/vendor/
+mobile/node_modules/
+
+# Environment
+backend/.env
+!backend/.env.example
+
+# Laravel
+backend/storage/*.key
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/bootstrap/cache/packages.php
+backend/bootstrap/cache/services.php
+
+# SQLite (dev only)
+backend/database/database.sqlite
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mobile builds
+mobile/.expo/
+mobile/android/
+mobile/ios/
+*.apk
+*.aab
+*.ipa
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+mobile/*.tsbuildinfo
