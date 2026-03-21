@@ -1,6 +1,6 @@
 # Stip Me — Documentation
 
-Specs et documents de référence : `C:\Users\willi\Documents\Projets\App_StipGo\`
+Specs et documents de référence : `C:\Users\willi\Documents\Projets\App_StipMe\`
 
 ## Fichiers clés
 
