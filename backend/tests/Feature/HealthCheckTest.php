@@ -5,7 +5,7 @@ test('health check returns ok', function () {
 
     $response->assertOk()
         ->assertJsonPath('data.status', 'ok')
-        ->assertJsonPath('data.app', 'Stip Go')
+        ->assertJsonPath('data.app', 'Stip Me')
         ->assertJsonStructure([
             'data' => ['status', 'app', 'version', 'timestamp'],
         ]);

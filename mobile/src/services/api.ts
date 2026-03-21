@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = __DEV__
   ? 'http://10.0.2.2:8000/api/v1'  // Android emulator -> localhost
-  : 'https://api.stip-go.com/api/v1';
+  : 'https://api.stip-me.com/api/v1';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

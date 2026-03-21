@@ -36,9 +36,9 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: stipgo
-          POSTGRES_PASSWORD: stipgo_secret
-          POSTGRES_DB: stipgo_test
+          POSTGRES_USER: stipme
+          POSTGRES_PASSWORD: stipme_secret
+          POSTGRES_DB: stipme_test
         ports:
           - 5432:5432
         options: >-
@@ -69,9 +69,9 @@ jobs:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
-          DB_DATABASE: stipgo_test
-          DB_USERNAME: stipgo
-          DB_PASSWORD: stipgo_secret
+          DB_DATABASE: stipme_test
+          DB_USERNAME: stipme
+          DB_PASSWORD: stipme_secret
           CACHE_STORE: redis
           REDIS_HOST: 127.0.0.1
         run: vendor/bin/pest --parallel

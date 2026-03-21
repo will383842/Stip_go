@@ -1,4 +1,4 @@
-# Stip Go — Documentation
+# Stip Me — Documentation
 
 Specs et documents de référence : `C:\Users\willi\Documents\Projets\App_StipGo\`
 
