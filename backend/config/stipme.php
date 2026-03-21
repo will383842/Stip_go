@@ -8,6 +8,34 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    // Feature flags — toggle features on/off
+    'features' => [
+        'stamps' => true,
+        'stamp_press' => true,
+        'stamp_flash' => true,
+        'invisible_borders' => true,
+        'passport' => true,
+        'dm' => true,
+        'shouts' => true,
+        'squad' => true,
+        'exports' => true,
+        'invitations' => true,
+        'invisible_mode' => true,
+        'audio_branding' => true,
+        'waves' => true,
+        'icebreakers' => true,
+    ],
+
+    // Animation durations (ms)
+    'animations' => [
+        'stamp_spot_ms' => 300,
+        'stamp_city_ms' => 400,
+        'stamp_region_ms' => 450,
+        'stamp_country_ms' => 500,
+        'border_crossing_ms' => 600,
+        'wave_ms' => 200,
+    ],
+
     // Stamp detection radius thresholds (meters)
     'stamp' => [
         'min_distance_meters' => 50,      // Ignore positions < 50m apart
