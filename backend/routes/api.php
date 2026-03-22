@@ -2,11 +2,19 @@
 
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DmController;
+use App\Http\Controllers\Api\V1\ExplorationController;
+use App\Http\Controllers\Api\V1\FeedController;
+use App\Http\Controllers\Api\V1\FlashController;
+use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PassportController;
+use App\Http\Controllers\Api\V1\PepiteController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\ShoutController;
+use App\Http\Controllers\Api\V1\SquadController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +69,8 @@ Route::prefix('v1')->group(function () {
 
         // World Passport
         Route::get('/passport', [PassportController::class, 'index']);
+        Route::post('/passport/declare', [PassportController::class, 'declare'])
+            ->middleware('throttle:10,1');
         Route::get('/passport/compare/{user}', [PassportController::class, 'compare'])
             ->where('user', '[0-9a-f\-]{36}')
             ->middleware('throttle:60,1');
@@ -77,5 +87,116 @@ Route::prefix('v1')->group(function () {
         // Search
         Route::get('/search', [SearchController::class, 'index'])
             ->middleware('throttle:30,1');
+
+        // --- Sprint 3-4: Social ---
+
+        // Friendships
+        Route::prefix('friends')->group(function () {
+            Route::get('/', [FriendshipController::class, 'index']);
+            Route::get('/requests', [FriendshipController::class, 'requests']);
+            Route::post('/{id}/request', [FriendshipController::class, 'sendRequest'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::post('/{id}/accept', [FriendshipController::class, 'accept'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::delete('/{id}', [FriendshipController::class, 'destroy'])
+                ->where('id', '[0-9a-f\-]{36}');
+        });
+
+        // DM
+        Route::prefix('dm')->group(function () {
+            Route::get('/', [DmController::class, 'conversations']);
+            Route::post('/', [DmController::class, 'send']);
+            Route::get('/{conversation_id}', [DmController::class, 'messages'])
+                ->where('conversation_id', '[0-9a-f\-]{36}');
+            Route::post('/{conversation_id}/react', [DmController::class, 'react'])
+                ->where('conversation_id', '[0-9a-f\-]{36}');
+            Route::post('/{conversation_id}/read', [DmController::class, 'markRead'])
+                ->where('conversation_id', '[0-9a-f\-]{36}');
+        });
+
+        // Shouts
+        Route::prefix('shouts')->group(function () {
+            Route::post('/', [ShoutController::class, 'store']);
+            Route::get('/', [ShoutController::class, 'index']);
+            Route::get('/{id}', [ShoutController::class, 'show'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::post('/{id}/join', [ShoutController::class, 'join'])
+                ->where('id', '[0-9a-f\-]{36}');
+        });
+
+        // Squads
+        Route::prefix('squads')->group(function () {
+            Route::post('/', [SquadController::class, 'store'])
+                ->middleware('throttle:1,1440'); // 1/day
+            Route::get('/me', [SquadController::class, 'mySquads']);
+            Route::get('/join/{invite_code}', [SquadController::class, 'joinByCode']);
+            Route::get('/{id}', [SquadController::class, 'show'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::patch('/{id}', [SquadController::class, 'update'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+            Route::delete('/{id}', [SquadController::class, 'destroy'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+            Route::post('/{id}/join', [SquadController::class, 'join'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:120,1');
+            Route::delete('/{id}/leave', [SquadController::class, 'leave'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+            Route::delete('/{id}/members/{uid}', [SquadController::class, 'kick'])
+                ->where(['id' => '[0-9a-f\-]{36}', 'uid' => '[0-9a-f\-]{36}'])
+                ->middleware('throttle:60,1');
+            Route::post('/{id}/stamps', [SquadController::class, 'createStamp'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::get('/{id}/stamps', [SquadController::class, 'stamps'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+            Route::post('/{id}/messages', [SquadController::class, 'sendMessage'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::get('/{id}/messages', [SquadController::class, 'messages'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::get('/{id}/leaderboard', [SquadController::class, 'leaderboard'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+            Route::get('/{id}/stats', [SquadController::class, 'stats'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:60,1');
+        });
+
+        // Stamp Flash
+        Route::prefix('stamps/flash')->group(function () {
+            Route::get('/today', [FlashController::class, 'today']);
+            Route::post('/capture', [FlashController::class, 'capture'])
+                ->middleware('throttle:1,1440'); // 1/day
+        });
+
+        // Pépites
+        Route::prefix('pepites')->group(function () {
+            Route::post('/', [PepiteController::class, 'store'])
+                ->middleware('throttle:120,1');
+            Route::get('/', [PepiteController::class, 'index'])
+                ->middleware('throttle:60,1');
+            Route::get('/top', [PepiteController::class, 'top'])
+                ->middleware('throttle:60,1');
+            Route::get('/{id}', [PepiteController::class, 'show'])
+                ->where('id', '[0-9a-f\-]{36}');
+            Route::post('/{id}/vote', [PepiteController::class, 'vote'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:120,1');
+            Route::delete('/{id}/vote', [PepiteController::class, 'unvote'])
+                ->where('id', '[0-9a-f\-]{36}')
+                ->middleware('throttle:120,1');
+        });
+
+        // Terra Incognita
+        Route::prefix('exploration')->middleware('throttle:60,1')->group(function () {
+            Route::get('/coverage', [ExplorationController::class, 'coverage']);
+            Route::get('/tiles', [ExplorationController::class, 'tiles']);
+        });
+
+        // Feed
+        Route::get('/feed', [FeedController::class, 'index'])
+            ->middleware('throttle:60,1');
     });
 });

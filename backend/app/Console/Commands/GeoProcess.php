@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ActivityFeed;
 use App\Models\CronLog;
+use App\Models\ExploredTile;
 use App\Models\PassportStamp;
 use App\Models\UserBadge;
 use Illuminate\Console\Command;
@@ -38,6 +40,7 @@ class GeoProcess extends Command
             foreach ($positions as $pos) {
                 try {
                     $this->processUserPosition($pos);
+                    $this->computeH3Tile($pos);
                     $processed++;
                 } catch (\Exception $e) {
                     // Don't let one user's error stop the batch
@@ -144,7 +147,33 @@ class GeoProcess extends Command
             $existing->where('city_name', $cityName);
         }
 
-        if ($existing->exists()) {
+        $existingStamp = $existing->first();
+
+        if ($existingStamp) {
+            // If a 'declared' stamp exists for this country, verify it → upgrade to 'gps'
+            if ($type === 'country' && $existingStamp->source === 'declared') {
+                try {
+                    DB::transaction(function () use ($existingStamp, $userId, $countryCode) {
+                        $existingStamp->update(['source' => 'gps', 'stamped_at' => now()]);
+
+                        DB::table('notifications')->insert([
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'user_id' => $userId,
+                            'type' => 'stamp_verified',
+                            'title' => 'Stamp vérifié !',
+                            'body' => "Ton stamp {$countryCode} est maintenant officiel !",
+                            'data' => json_encode([
+                                'country_code' => $countryCode,
+                                'stamp_id' => $existingStamp->id,
+                            ]),
+                            'created_at' => now(),
+                        ]);
+                    });
+                } catch (\Exception $e) {
+                    report($e);
+                }
+            }
+
             return;
         }
 
@@ -154,19 +183,72 @@ class GeoProcess extends Command
             'country_code' => $countryCode,
             'region_name' => $regionName,
             'city_name' => $cityName,
+            'source' => 'gps',
             'stamped_at' => now(),
         ]);
 
         // Increment total_stamps
         DB::statement('UPDATE users SET total_stamps = total_stamps + 1 WHERE id = ?', [$userId]);
 
+        // Activity feed entry
+        ActivityFeed::create([
+            'user_id' => $userId,
+            'type' => $type === 'country' ? 'country' : 'stamp',
+            'content' => [
+                'stamp_type' => $type,
+                'country_code' => $countryCode,
+                'region_name' => $regionName,
+                'city_name' => $cityName,
+            ],
+        ]);
+
         // Check badge auto-unlock
         $this->checkBadges($userId);
     }
 
+    /**
+     * Compute H3 tile for Terra Incognita and insert into explored_tiles.
+     */
+    private function computeH3Tile(object $pos): void
+    {
+        $userId = $pos->user_id;
+
+        // H3 index at resolution 8 (~0.74 km² hexagon)
+        // Uses PostgreSQL h3 extension if available, otherwise approximate with lat/lng rounding
+        try {
+            $h3 = DB::selectOne(
+                "SELECT h3_lat_lng_to_cell(ST_MakePoint(?, ?)::point, 8)::text as h3_index",
+                [$pos->lng, $pos->lat]
+            );
+
+            if ($h3 && $h3->h3_index) {
+                ExploredTile::firstOrCreate(
+                    ['user_id' => $userId, 'h3_index' => $h3->h3_index],
+                    ['first_visited_at' => now()]
+                );
+
+                // Invalidate cache
+                Redis::del("user:{$userId}:explored_tiles");
+                Redis::del("user:{$userId}:coverage:" . Redis::get("user:{$userId}:current_city"));
+            }
+        } catch (\Throwable $e) {
+            // H3 extension not installed — use fallback approximation
+            // Resolution 8 ≈ 0.46 km edge → round to ~3 decimal places
+            report($e);
+            $approxH3 = sprintf('8_%s_%s', round($pos->lat, 3), round($pos->lng, 3));
+
+            ExploredTile::firstOrCreate(
+                ['user_id' => $userId, 'h3_index' => $approxH3],
+                ['first_visited_at' => now()]
+            );
+
+            Redis::del("user:{$userId}:explored_tiles");
+        }
+    }
+
     private function checkBadges(string $userId): void
     {
-        // P4 fix: single GROUP BY query instead of 4 separate COUNTs
+        // Only count verified stamps (GPS + imported) for badges/levels — declared stamps excluded
         $stats = DB::selectOne("
             SELECT
                 COUNT(*) as total,
@@ -174,7 +256,7 @@ class GeoProcess extends Command
                 COUNT(*) FILTER (WHERE stamp_type = 'city') as cities,
                 COUNT(*) FILTER (WHERE stamp_type = 'region') as regions,
                 COUNT(*) FILTER (WHERE stamp_type = 'spot') as spots
-            FROM passport_stamps WHERE user_id = ?
+            FROM passport_stamps WHERE user_id = ? AND source IN ('gps', 'imported')
         ", [$userId]);
 
         $total = (int) ($stats->total ?? 0);

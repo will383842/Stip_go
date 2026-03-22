@@ -24,6 +24,7 @@ class PassportStamp extends Model
         'city_name',
         'spot_name',
         'spot_category',
+        'source',
         'stamped_at',
         'animation_seen',
         'shared',
@@ -69,5 +70,15 @@ class PassportStamp extends Model
     public function scopeSpots($query)
     {
         return $query->where('stamp_type', 'spot');
+    }
+
+    public function scopeVerified($query)
+    {
+        return $query->whereIn('source', ['gps', 'imported']);
+    }
+
+    public function scopeDeclared($query)
+    {
+        return $query->where('source', 'declared');
     }
 }

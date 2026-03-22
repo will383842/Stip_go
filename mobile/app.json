@@ -48,7 +48,8 @@
         {
           "microphonePermission": "Stip Me utilise le micro pour les messages vocaux."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

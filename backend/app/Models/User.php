@@ -150,6 +150,50 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    // --- Sprint 3-4: Social relations ---
+
+    public function friendships(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'user_id');
+    }
+
+    public function shouts(): HasMany
+    {
+        return $this->hasMany(Shout::class);
+    }
+
+    public function squads(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Squad::class, 'squad_members')
+            ->withPivot('color', 'role', 'weekly_stamps', 'total_stamps', 'joined_at');
+    }
+
+    public function pepites(): HasMany
+    {
+        return $this->hasMany(Pepite::class);
+    }
+
+    public function exploredTiles(): HasMany
+    {
+        return $this->hasMany(ExploredTile::class);
+    }
+
+    public function activityFeed(): HasMany
+    {
+        return $this->hasMany(ActivityFeed::class);
+    }
+
+    /**
+     * Get accepted friends (both directions).
+     */
+    public function friends()
+    {
+        $sent = Friendship::where('user_id', $this->id)->accepted()->pluck('friend_id');
+        $received = Friendship::where('friend_id', $this->id)->accepted()->pluck('user_id');
+
+        return User::whereIn('id', $sent->merge($received));
+    }
+
     public function isMinor(): bool
     {
         if (! $this->birth_year) {

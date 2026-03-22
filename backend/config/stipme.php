@@ -63,7 +63,7 @@ return [
 
     // Push notifications
     'notifications' => [
-        'max_per_day' => 3,
+        'max_per_day' => 5,
     ],
 
     // Moderation (Perspective API)

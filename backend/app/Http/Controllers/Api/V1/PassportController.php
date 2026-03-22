@@ -22,10 +22,12 @@ class PassportController extends Controller
             ->orderByDesc('stamped_at')
             ->cursorPaginate(30);
 
-        // P1 fix: single GROUP BY query instead of 4 separate COUNTs
+        // Stats with source breakdown for countries
         $stats = DB::selectOne("
             SELECT
                 COUNT(*) FILTER (WHERE stamp_type = 'country') as countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'country' AND source IN ('gps', 'imported')) as verified_countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'country' AND source = 'declared') as declared_countries,
                 COUNT(*) FILTER (WHERE stamp_type = 'city') as cities,
                 COUNT(*) FILTER (WHERE stamp_type = 'region') as regions,
                 COUNT(*) FILTER (WHERE stamp_type = 'spot') as spots
@@ -44,7 +46,8 @@ class PassportController extends Controller
 
         $stampedCountries = PassportStamp::where('user_id', $userId)
             ->countries()
-            ->pluck('country_code')
+            ->select('country_code', 'source')
+            ->get()
             ->toArray();
 
         return response()->json([
@@ -54,10 +57,16 @@ class PassportController extends Controller
                 'badges' => $badges,
                 'stats' => [
                     'total_stamps' => $user->total_stamps,
-                    'countries' => (int) ($stats->countries ?? 0),
-                    'cities' => (int) ($stats->cities ?? 0),
-                    'regions' => (int) ($stats->regions ?? 0),
-                    'spots' => (int) ($stats->spots ?? 0),
+                    'countries_visited' => (int) ($stats->countries ?? 0),
+                    'verified_countries' => (int) ($stats->verified_countries ?? 0),
+                    'declared_countries' => (int) ($stats->declared_countries ?? 0),
+                    'cities_visited' => (int) ($stats->cities ?? 0),
+                    'regions_visited' => (int) ($stats->regions ?? 0),
+                    'spots_visited' => (int) ($stats->spots ?? 0),
+                    'days_active' => (int) DB::selectOne(
+                        "SELECT COUNT(DISTINCT DATE(recorded_at)) as days FROM positions WHERE user_id = ?",
+                        [$userId]
+                    )?->days ?? 0,
                 ],
                 'level' => $level,
                 'next_level' => $nextLevel,
@@ -67,6 +76,86 @@ class PassportController extends Controller
                     'cursor' => $stamps->nextCursor()?->encode(),
                     'has_more' => $stamps->hasMorePages(),
                 ],
+            ],
+            'errors' => [],
+        ]);
+    }
+
+    public function declare(Request $request): JsonResponse
+    {
+        $request->validate([
+            'country_codes' => 'required|array|min:1|max:100',
+            'country_codes.*' => 'required|string|size:2',
+        ]);
+
+        $user = $request->user();
+        $userId = $user->id;
+        $countryCodes = array_unique($request->input('country_codes'));
+
+        // Validate country codes exist
+        $validCodes = DB::table('countries')
+            ->whereIn('code', $countryCodes)
+            ->pluck('code')
+            ->toArray();
+
+        // Check max 100 declared stamps total for this user
+        $existingDeclaredCount = PassportStamp::where('user_id', $userId)
+            ->where('source', 'declared')
+            ->where('stamp_type', 'country')
+            ->count();
+
+        $maxAllowed = 100 - $existingDeclaredCount;
+        if ($maxAllowed <= 0) {
+            return response()->json([
+                'data' => null,
+                'errors' => [['code' => 'max_declared', 'message' => 'Maximum 100 pays déclarés atteint']],
+            ], 422);
+        }
+
+        // Get already stamped countries (any source)
+        $alreadyStamped = PassportStamp::where('user_id', $userId)
+            ->where('stamp_type', 'country')
+            ->whereIn('country_code', $validCodes)
+            ->pluck('country_code')
+            ->toArray();
+
+        $declaredCount = 0;
+        $ignoredCount = 0;
+
+        foreach ($validCodes as $code) {
+            if (in_array($code, $alreadyStamped)) {
+                $ignoredCount++;
+                continue;
+            }
+
+            if ($declaredCount >= $maxAllowed) {
+                $ignoredCount++;
+                continue;
+            }
+
+            PassportStamp::create([
+                'user_id' => $userId,
+                'stamp_type' => 'country',
+                'country_code' => $code,
+                'source' => 'declared',
+                'stamped_at' => now(),
+            ]);
+
+            $declaredCount++;
+        }
+
+        $ignoredCount += count($countryCodes) - count($validCodes); // invalid codes
+
+        // Total countries after insert
+        $totalCountries = PassportStamp::where('user_id', $userId)
+            ->where('stamp_type', 'country')
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'declared_count' => $declaredCount,
+                'ignored_count' => $ignoredCount,
+                'total_countries' => $totalCountries,
             ],
             'errors' => [],
         ]);
