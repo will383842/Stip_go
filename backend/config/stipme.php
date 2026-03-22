@@ -75,12 +75,13 @@ return [
     // Shouts
     'shouts' => [
         'durations_hours' => [2, 12, 24],
-        'radius_meters' => 500,
+        'radius_meters' => 2000,
     ],
 
     // DM
     'dm' => [
         'max_message_length' => 2000,
+        'vocal_max_seconds' => 60,
     ],
 
     // Export
@@ -95,6 +96,8 @@ return [
     'invitation' => [
         'validation_hours' => 72,
         'triggers_count' => 7,
+        'max_cta_per_session' => 1,
+        'max_cta_per_day' => 3,
     ],
 
     // Security — Minors
@@ -108,6 +111,33 @@ return [
     'launch_cities' => [
         'lisbon', 'barcelona', 'amsterdam', 'berlin', 'bangkok',
     ],
+
+    // Miles rewards per stamp type
+    'miles' => [
+        'stamp_spot' => 10,
+        'stamp_city' => 20,
+        'stamp_region' => 30,
+        'stamp_country' => 50,
+    ],
+
+    // Streak
+    'streak' => [
+        'reset_time' => 'midnight_local',
+    ],
+
+    // Pépites
+    'pepites' => [
+        'min_votes_visibility' => 5,
+        'radius_meters' => 5000,
+    ],
+
+    // UI constraints
+    'ui' => [
+        'min_font_size_px' => 12,
+    ],
+
+    // Squad limits
+    'squad_max_per_user' => 10,
 
     // API pagination
     'pagination' => [

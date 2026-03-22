@@ -179,6 +179,15 @@ return [
             'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
         ],
 
+        // Redis persistent instance — sessions, queues (port 6380, noeviction)
+        'session' => [
+            'host' => env('REDIS_PERSISTENT_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PERSISTENT_PASSWORD'),
+            'port' => env('REDIS_PERSISTENT_PORT', '6380'),
+            'database' => env('REDIS_SESSION_DB', '0'),
+        ],
+
     ],
 
 ];
