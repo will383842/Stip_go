@@ -104,9 +104,12 @@ class ShoutController extends Controller
         if ($cached) {
             $shouts = collect(json_decode($cached, true));
         } else {
+            $blockedIds = $user->blockedIds();
+
             $query = Shout::active()
                 ->nearby($lat, $lng)
                 ->with('user:id,name,username,avatar_url')
+                ->when(count($blockedIds) > 0, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
                 ->orderByDesc('created_at')
                 ->limit(50);
 

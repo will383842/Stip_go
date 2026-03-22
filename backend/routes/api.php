@@ -105,7 +105,8 @@ Route::prefix('v1')->group(function () {
         // DM
         Route::prefix('dm')->group(function () {
             Route::get('/', [DmController::class, 'conversations']);
-            Route::post('/', [DmController::class, 'send']);
+            Route::post('/', [DmController::class, 'send'])
+                ->middleware('throttle:60,1');
             Route::get('/{conversation_id}', [DmController::class, 'messages'])
                 ->where('conversation_id', '[0-9a-f\-]{36}');
             Route::post('/{conversation_id}/react', [DmController::class, 'react'])
@@ -116,7 +117,8 @@ Route::prefix('v1')->group(function () {
 
         // Shouts
         Route::prefix('shouts')->group(function () {
-            Route::post('/', [ShoutController::class, 'store']);
+            Route::post('/', [ShoutController::class, 'store'])
+                ->middleware('throttle:10,1440');
             Route::get('/', [ShoutController::class, 'index']);
             Route::get('/{id}', [ShoutController::class, 'show'])
                 ->where('id', '[0-9a-f\-]{36}');

@@ -61,10 +61,12 @@ class PepiteController extends Controller
 
         $radius = (int) ($request->radius ?? config('stipme.pepites.radius_meters', 5000));
         $user = $request->user();
+        $blockedIds = $user->blockedIds();
 
         $pepites = Pepite::active()
             ->nearby((float) $request->lat, (float) $request->lng, $radius)
             ->with('user:id,name,username,avatar_url')
+            ->when(count($blockedIds) > 0, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
             ->orderByDesc('votes_count')
             ->limit(50)
             ->get()

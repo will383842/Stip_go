@@ -68,3 +68,8 @@ Schedule::command('feed:friend-stamp-notif')
 Schedule::command('notifications:purge-logs')
     ->dailyAt('03:00')
     ->withoutOverlapping();
+
+// Grooming detection: check for adults 25+ sending 5+ unanswered DMs to minors — daily at 4h
+Schedule::command('dm:detect-grooming')
+    ->dailyAt('04:00')
+    ->withoutOverlapping();

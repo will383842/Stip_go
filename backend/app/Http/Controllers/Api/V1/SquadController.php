@@ -375,6 +375,15 @@ class SquadController extends Controller
      */
     private function addMember($user, Squad $squad): JsonResponse
     {
+        // Check if user is blocked by squad creator (or vice versa)
+        $blockedIds = $user->blockedIds();
+        if (in_array($squad->creator_user_id, $blockedIds)) {
+            return response()->json([
+                'data' => null,
+                'errors' => [['code' => 'not_found', 'message' => 'Squad not found']],
+            ], 404);
+        }
+
         if ($squad->isFull()) {
             return response()->json([
                 'data' => null,

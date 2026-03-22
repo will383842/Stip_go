@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -212,6 +213,28 @@ class User extends Authenticatable
         }
 
         return ((int) date('Y') - $this->birth_year) < 13;
+    }
+
+    /**
+     * Get IDs of all users this user has blocked OR who have blocked this user.
+     * Used to filter out blocked users from Shouts, Pépites, Feed, Squad, etc.
+     */
+    public function blockedUserIds(): array
+    {
+        return DB::select(
+            'SELECT blocked_user_id as uid FROM blocked_users WHERE blocker_user_id = ?
+             UNION
+             SELECT blocker_user_id as uid FROM blocked_users WHERE blocked_user_id = ?',
+            [$this->id, $this->id]
+        );
+    }
+
+    /**
+     * Get flat array of blocked user IDs (for whereNotIn queries).
+     */
+    public function blockedIds(): array
+    {
+        return array_column($this->blockedUserIds(), 'uid');
     }
 
     public function getPassportLevel(): ?PassportLevel

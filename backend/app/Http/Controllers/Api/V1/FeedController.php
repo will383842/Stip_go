@@ -27,7 +27,11 @@ class FeedController extends Controller
             ->selectRaw("CASE WHEN user_id = ? THEN friend_id ELSE user_id END as fid", [$user->id])
             ->pluck('fid');
 
-        $query = ActivityFeed::whereIn('user_id', $friendIds)
+        // Exclude blocked users from feed
+        $blockedIds = $user->blockedIds();
+        $filteredFriendIds = $friendIds->reject(fn ($fid) => in_array($fid, $blockedIds));
+
+        $query = ActivityFeed::whereIn('user_id', $filteredFriendIds)
             ->with('user:id,name,username,avatar_url')
             ->orderByDesc('created_at');
 
