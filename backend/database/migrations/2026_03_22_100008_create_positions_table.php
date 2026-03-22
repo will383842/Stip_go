@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         // Partitioned table for positions (by month)
-        DB::statement("
+        DB::statement('
             CREATE TABLE positions (
                 id UUID DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -22,7 +22,7 @@ return new class extends Migration
                 recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 PRIMARY KEY (id, recorded_at)
             ) PARTITION BY RANGE (recorded_at)
-        ");
+        ');
 
         // Create monthly partitions for 2026
         $months = [

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class BlockedUser extends Model
 {
     public $timestamps = false;
+
     public $incrementing = false;
 
     protected $fillable = ['blocker_user_id', 'blocked_user_id'];

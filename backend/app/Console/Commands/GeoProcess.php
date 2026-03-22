@@ -166,7 +166,8 @@ class GeoProcess extends Command
 
     private function checkBadges(string $userId): void
     {
-        $totalStamps = DB::selectOne('SELECT total_stamps FROM users WHERE id = ?', [$userId])?->total_stamps ?? 0;
+        $result = DB::selectOne('SELECT total_stamps FROM users WHERE id = ?', [$userId]);
+        $totalStamps = $result ? $result->total_stamps : 0;
         $countriesCount = PassportStamp::where('user_id', $userId)->countries()->count();
         $citiesCount = PassportStamp::where('user_id', $userId)->cities()->count();
         $spotsCount = PassportStamp::where('user_id', $userId)->spots()->count();

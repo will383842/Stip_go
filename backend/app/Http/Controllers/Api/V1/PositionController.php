@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\BlockedUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +88,7 @@ class PositionController extends Controller
 
         $query = DB::table('positions')
             ->where('user_id', $request->user()->id)
-            ->select(DB::raw("id, ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng, accuracy, speed, recorded_at"))
+            ->select(DB::raw('id, ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng, accuracy, speed, recorded_at'))
             ->orderByDesc('recorded_at');
 
         if ($request->from) {
@@ -127,25 +126,18 @@ class PositionController extends Controller
 
         [$swLat, $swLng, $neLat, $neLng] = array_map('floatval', $bbox);
 
-        // Get blocked user IDs for exclusion
-        $blockedIds = [];
-        if ($user = $request->user()) {
-            $blockedIds = BlockedUser::where('blocker_user_id', $user->id)
-                ->orWhere('blocked_user_id', $user->id)
-                ->pluck('blocker_user_id')
-                ->merge(BlockedUser::where('blocker_user_id', $user->id)->pluck('blocked_user_id'))
-                ->unique()
-                ->toArray();
-        }
+        // Note: position_clusters is an aggregated table (no user_id column),
+        // so blocked user filtering happens at the individual position level
+        // during the clusters:refresh cron, not here.
 
         $clusters = DB::table('position_clusters')
             ->where('zoom_level', $request->zoom)
-            ->select(DB::raw("
+            ->select(DB::raw('
                 id,
                 ROUND(ST_Y(center::geometry)::numeric, 2) as lat,
                 ROUND(ST_X(center::geometry)::numeric, 2) as lng,
                 count
-            "))
+            '))
             ->whereRaw('ST_Y(center::geometry) BETWEEN ? AND ?', [$swLat, $neLat])
             ->whereRaw('ST_X(center::geometry) BETWEEN ? AND ?', [$swLng, $neLng])
             ->get();

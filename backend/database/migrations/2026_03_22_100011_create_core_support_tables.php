@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         // Position clusters (refreshed by cron every 5 min)
-        DB::statement("
+        DB::statement('
             CREATE TABLE position_clusters (
                 id SERIAL PRIMARY KEY,
                 zoom_level SMALLINT NOT NULL,
@@ -19,7 +19,7 @@ return new class extends Migration
                 bbox GEOMETRY(Polygon) NULL,
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
         DB::statement('CREATE INDEX idx_clusters_zoom_center ON position_clusters USING GIST (center)');
 
         // Blocked users
@@ -69,7 +69,7 @@ return new class extends Migration
         });
 
         // Notifications
-        DB::statement("
+        DB::statement('
             CREATE TABLE notifications (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -80,7 +80,7 @@ return new class extends Migration
                 read_at TIMESTAMPTZ,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
         DB::statement('CREATE INDEX idx_notifications_user ON notifications (user_id, created_at DESC)');
     }
 

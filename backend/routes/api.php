@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PassportController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\ReportController;
@@ -62,6 +63,10 @@ Route::prefix('v1')->group(function () {
         // Reports
         Route::post('/reports', [ReportController::class, 'store'])
             ->middleware('throttle:10,1440');
+
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
 
         // Search
         Route::get('/search', [SearchController::class, 'index'])

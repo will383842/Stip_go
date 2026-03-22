@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Report extends Model
+class Notification extends Model
 {
     use HasUuids;
 
@@ -16,23 +16,31 @@ class Report extends Model
 
     public $incrementing = false;
 
-    protected $fillable = ['reporter_user_id', 'reported_user_id', 'type', 'description', 'status', 'reviewed_by', 'reviewed_at'];
+    protected $fillable = [
+        'user_id',
+        'type',
+        'title',
+        'body',
+        'data',
+        'read_at',
+    ];
 
     protected function casts(): array
     {
         return [
+            'data' => 'array',
+            'read_at' => 'datetime',
             'created_at' => 'datetime',
-            'reviewed_at' => 'datetime',
         ];
     }
 
-    public function reporter(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reporter_user_id');
+        return $this->belongsTo(User::class);
     }
 
-    public function reported(): BelongsTo
+    public function scopeUnread($query)
     {
-        return $this->belongsTo(User::class, 'reported_user_id');
+        return $query->whereNull('read_at');
     }
 }

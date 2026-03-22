@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -33,7 +33,7 @@ return new class extends Migration
         ");
 
         // Direct messages (Sprint 3-4)
-        DB::statement("
+        DB::statement('
             CREATE TABLE direct_messages (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
@@ -48,7 +48,7 @@ return new class extends Migration
                 deleted_by_receiver BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
 
         // Shouts (Sprint 3-4)
         DB::statement("
@@ -76,7 +76,7 @@ return new class extends Migration
         });
 
         // Squads (Sprint 3-4)
-        DB::statement("
+        DB::statement('
             CREATE TABLE squads (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
@@ -91,7 +91,7 @@ return new class extends Migration
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
 
         Schema::create('squad_members', function (Blueprint $table) {
             $table->uuid('squad_id');
@@ -149,7 +149,7 @@ return new class extends Migration
         ");
 
         // Geofence zones (Sprint 3-4)
-        DB::statement("
+        DB::statement('
             CREATE TABLE geofence_zones (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -160,7 +160,7 @@ return new class extends Migration
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
 
         // Activity feed (Sprint 3-4)
         Schema::create('activity_feed', function (Blueprint $table) {
@@ -175,7 +175,7 @@ return new class extends Migration
         });
 
         // Daily quests (Sprint 3-4)
-        DB::statement("
+        DB::statement('
             CREATE TABLE daily_quests_progress (
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 quest_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -185,7 +185,7 @@ return new class extends Migration
                 bonus_claimed BOOLEAN NOT NULL DEFAULT FALSE,
                 PRIMARY KEY (user_id, quest_date)
             )
-        ");
+        ');
 
         // Friendships (Sprint 3-4)
         Schema::create('friendships', function (Blueprint $table) {
@@ -199,7 +199,7 @@ return new class extends Migration
         });
 
         // Pepites (Sprint 3-4)
-        DB::statement("
+        DB::statement('
             CREATE TABLE pepites (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -211,7 +211,7 @@ return new class extends Migration
                 votes_count INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
         DB::statement('CREATE INDEX idx_pepites_location ON pepites USING GIST (location)');
 
         Schema::create('pepite_votes', function (Blueprint $table) {
@@ -224,7 +224,7 @@ return new class extends Migration
         });
 
         // Server regions (multi-region prep)
-        DB::statement("
+        DB::statement('
             CREATE TABLE server_regions (
                 id SERIAL PRIMARY KEY,
                 code VARCHAR(10) UNIQUE NOT NULL,
@@ -240,7 +240,7 @@ return new class extends Migration
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-        ");
+        ');
     }
 
     public function down(): void

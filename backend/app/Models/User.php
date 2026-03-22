@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,11 +11,49 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $username
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $apple_id
+ * @property string|null $google_id
+ * @property string|null $avatar_url
+ * @property string $locale
+ * @property string|null $country_code
+ * @property string|null $timezone
+ * @property int|null $birth_year
+ * @property int $onboarding_step
+ * @property bool $is_premium
+ * @property bool $is_beta_tester
+ * @property bool $is_activator
+ * @property int $level
+ * @property int $miles_balance
+ * @property string $ref_code
+ * @property int $referral_count
+ * @property int $encounters_count
+ * @property int $sessions_count
+ * @property int $total_stamps
+ * @property array $top_stamps
+ * @property array|null $motivation
+ * @property string $passport_level_name
+ * @property string|null $profile_mood
+ * @property string $profile_color
+ * @property array $pinned_countries
+ * @property string|null $home_country_code
+ * @property Carbon|null $username_changed_at
+ * @property Carbon|null $referral_validated_at
+ * @property Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

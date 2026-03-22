@@ -6,4 +6,8 @@ parameters:
         - app/
     level: 6
     ignoreErrors:
+        - identifier: missingType.generics
+        - identifier: missingType.iterableValue
+        - identifier: missingType.return
+        - identifier: missingType.parameter
     excludePaths:

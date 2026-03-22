@@ -13,6 +13,7 @@ class PassportStamp extends Model
     public $timestamps = false;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

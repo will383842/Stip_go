@@ -15,7 +15,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'birth_year' => 'sometimes|integer|min:1950|max:' . ((int) date('Y') - 13),
+            'birth_year' => 'sometimes|integer|min:1950|max:'.((int) date('Y') - 13),
             'username' => 'sometimes|string|regex:/^[a-z0-9_]{3,30}$/',
             'onboarding_step' => 'sometimes|integer|min:1|max:5',
             'avatar_url' => 'sometimes|string|url|max:500',

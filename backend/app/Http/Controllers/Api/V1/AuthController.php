@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 class AuthController extends Controller
 {
@@ -22,9 +23,9 @@ class AuthController extends Controller
         ]);
 
         try {
-            $socialUser = Socialite::driver($request->provider)
-                ->stateless()
-                ->userFromToken($request->token);
+            /** @var AbstractProvider $driver */
+            $driver = Socialite::driver($request->provider);
+            $socialUser = $driver->stateless()->userFromToken($request->token);
         } catch (\Exception $e) {
             return response()->json([
                 'data' => null,
@@ -192,7 +193,9 @@ class AuthController extends Controller
 
         $passportLevel = $user->getPassportLevel();
         if ($passportLevel) {
-            $user->passport_level_name = $passportLevel->name[$user->locale] ?? $passportLevel->name['en'] ?? $user->passport_level_name;
+            /** @var array<string, string> $levelNames */
+            $levelNames = $passportLevel->name;
+            $user->passport_level_name = $levelNames[$user->locale] ?? $levelNames['en'] ?? $user->passport_level_name;
             $user->save();
         }
 
@@ -210,7 +213,7 @@ class AuthController extends Controller
         $baseName = substr($baseName, 0, 25);
 
         do {
-            $username = $baseName . '_' . random_int(1000, 9999);
+            $username = $baseName.'_'.random_int(1000, 9999);
         } while (User::where('username', $username)->exists());
 
         do {
