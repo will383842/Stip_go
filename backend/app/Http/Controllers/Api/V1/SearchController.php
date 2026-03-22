@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\BlockedUser;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
@@ -16,19 +16,19 @@ class SearchController extends Controller
 
         // H2 fix: escape ILIKE wildcards to prevent enumeration
         $query = str_replace(['%', '_'], ['\%', '\_'], $request->q);
-        $authUser = $request->user();
+        $authUserId = $request->user()->id;
 
-        // Get blocked IDs to exclude
-        $blockedIds = BlockedUser::where('blocker_user_id', $authUser->id)
-            ->pluck('blocked_user_id')
-            ->merge(
-                BlockedUser::where('blocked_user_id', $authUser->id)->pluck('blocker_user_id')
-            )
+        // P6 fix: single query for blocked IDs (instead of 2 separate queries)
+        $blockedIds = DB::table('blocked_users')
+            ->where('blocker_user_id', $authUserId)
+            ->orWhere('blocked_user_id', $authUserId)
+            ->get()
+            ->map(fn ($row) => $row->blocker_user_id === $authUserId ? $row->blocked_user_id : $row->blocker_user_id)
             ->unique()
             ->toArray();
 
         $users = User::whereNull('deleted_at')
-            ->where('id', '!=', $authUser->id)
+            ->where('id', '!=', $authUserId)
             ->whereNotIn('id', $blockedIds)
             ->where(function ($q) use ($query) {
                 $q->where('username', 'ILIKE', "%{$query}%")

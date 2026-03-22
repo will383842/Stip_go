@@ -166,30 +166,51 @@ class GeoProcess extends Command
 
     private function checkBadges(string $userId): void
     {
-        $result = DB::selectOne('SELECT total_stamps FROM users WHERE id = ?', [$userId]);
-        $totalStamps = $result ? $result->total_stamps : 0;
-        $countriesCount = PassportStamp::where('user_id', $userId)->countries()->count();
-        $citiesCount = PassportStamp::where('user_id', $userId)->cities()->count();
-        $spotsCount = PassportStamp::where('user_id', $userId)->spots()->count();
-        $regionsCount = PassportStamp::where('user_id', $userId)->regions()->count();
+        // P4 fix: single GROUP BY query instead of 4 separate COUNTs
+        $stats = DB::selectOne("
+            SELECT
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE stamp_type = 'country') as countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'city') as cities,
+                COUNT(*) FILTER (WHERE stamp_type = 'region') as regions,
+                COUNT(*) FILTER (WHERE stamp_type = 'spot') as spots
+            FROM passport_stamps WHERE user_id = ?
+        ", [$userId]);
+
+        $total = (int) ($stats->total ?? 0);
+        $countries = (int) ($stats->countries ?? 0);
+        $cities = (int) ($stats->cities ?? 0);
+        $regions = (int) ($stats->regions ?? 0);
+        $spots = (int) ($stats->spots ?? 0);
 
         $checks = [
-            ['first_stamp', $totalStamps >= 1],
-            ['five_countries', $countriesCount >= 5],
-            ['ten_countries', $countriesCount >= 10],
-            ['twenty_five_countries', $countriesCount >= 25],
-            ['ten_cities', $citiesCount >= 10],
-            ['fifty_cities', $citiesCount >= 50],
-            ['ten_spots', $spotsCount >= 10],
-            ['fifty_spots', $spotsCount >= 50],
-            ['hundred_spots', $spotsCount >= 100],
-            ['five_regions', $regionsCount >= 5],
+            ['first_stamp', $total >= 1],
+            ['five_countries', $countries >= 5],
+            ['ten_countries', $countries >= 10],
+            ['twenty_five_countries', $countries >= 25],
+            ['ten_cities', $cities >= 10],
+            ['fifty_cities', $cities >= 50],
+            ['ten_spots', $spots >= 10],
+            ['fifty_spots', $spots >= 50],
+            ['hundred_spots', $spots >= 100],
+            ['five_regions', $regions >= 5],
         ];
 
-        foreach ($checks as [$badgeCode, $earned]) {
+        // P5 fix: batch badge lookup (1 query instead of 10)
+        $earnedCodes = [];
+        foreach ($checks as [$code, $earned]) {
             if ($earned) {
-                $badge = DB::selectOne('SELECT id FROM badges WHERE code = ?', [$badgeCode]);
-                if ($badge && ! UserBadge::where('user_id', $userId)->where('badge_id', $badge->id)->exists()) {
+                $earnedCodes[] = $code;
+            }
+        }
+
+        if (! empty($earnedCodes)) {
+            $placeholders = implode(',', array_fill(0, count($earnedCodes), '?'));
+            $badges = DB::select("SELECT id, code FROM badges WHERE code IN ({$placeholders})", $earnedCodes);
+            $existingBadgeIds = UserBadge::where('user_id', $userId)->pluck('badge_id')->toArray();
+
+            foreach ($badges as $badge) {
+                if (! in_array($badge->id, $existingBadgeIds)) {
                     UserBadge::create([
                         'user_id' => $userId,
                         'badge_id' => $badge->id,
@@ -200,8 +221,9 @@ class GeoProcess extends Command
         }
 
         // Update passport level name
-        $level = DB::selectOne('SELECT name FROM passport_levels WHERE min_stamps <= ? ORDER BY min_stamps DESC LIMIT 1', [$totalStamps]);
+        $level = DB::selectOne('SELECT name FROM passport_levels WHERE min_stamps <= ? ORDER BY min_stamps DESC LIMIT 1', [$total]);
         if ($level) {
+            /** @var array<string, string> $levelName */
             $levelName = json_decode($level->name, true);
             DB::statement('UPDATE users SET passport_level_name = ? WHERE id = ?', [$levelName['fr'] ?? $levelName['en'] ?? 'Touriste', $userId]);
         }

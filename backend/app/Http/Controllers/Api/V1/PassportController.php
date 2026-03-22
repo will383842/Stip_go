@@ -3,30 +3,36 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\BlockedUser;
 use App\Models\PassportLevel;
 use App\Models\PassportStamp;
 use App\Models\User;
 use App\Models\UserBadge;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PassportController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        $userId = $user->id;
 
-        $stamps = PassportStamp::where('user_id', $user->id)
+        $stamps = PassportStamp::where('user_id', $userId)
             ->orderByDesc('stamped_at')
             ->cursorPaginate(30);
 
-        $countriesCount = PassportStamp::where('user_id', $user->id)->countries()->count();
-        $citiesCount = PassportStamp::where('user_id', $user->id)->cities()->count();
-        $regionsCount = PassportStamp::where('user_id', $user->id)->regions()->count();
-        $spotsCount = PassportStamp::where('user_id', $user->id)->spots()->count();
+        // P1 fix: single GROUP BY query instead of 4 separate COUNTs
+        $stats = DB::selectOne("
+            SELECT
+                COUNT(*) FILTER (WHERE stamp_type = 'country') as countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'city') as cities,
+                COUNT(*) FILTER (WHERE stamp_type = 'region') as regions,
+                COUNT(*) FILTER (WHERE stamp_type = 'spot') as spots
+            FROM passport_stamps WHERE user_id = ?
+        ", [$userId]);
 
-        $badges = UserBadge::where('user_id', $user->id)->with('badge')->get();
+        $badges = UserBadge::where('user_id', $userId)->with('badge')->get();
 
         $level = PassportLevel::where('min_stamps', '<=', $user->total_stamps)
             ->orderByDesc('min_stamps')
@@ -36,7 +42,7 @@ class PassportController extends Controller
             ->orderBy('min_stamps')
             ->first();
 
-        $stampedCountries = PassportStamp::where('user_id', $user->id)
+        $stampedCountries = PassportStamp::where('user_id', $userId)
             ->countries()
             ->pluck('country_code')
             ->toArray();
@@ -48,10 +54,10 @@ class PassportController extends Controller
                 'badges' => $badges,
                 'stats' => [
                     'total_stamps' => $user->total_stamps,
-                    'countries' => $countriesCount,
-                    'cities' => $citiesCount,
-                    'regions' => $regionsCount,
-                    'spots' => $spotsCount,
+                    'countries' => (int) ($stats->countries ?? 0),
+                    'cities' => (int) ($stats->cities ?? 0),
+                    'regions' => (int) ($stats->regions ?? 0),
+                    'spots' => (int) ($stats->spots ?? 0),
                 ],
                 'level' => $level,
                 'next_level' => $nextLevel,
@@ -70,45 +76,66 @@ class PassportController extends Controller
     {
         $authUser = $request->user();
 
-        // Check blocked
-        $isBlocked = BlockedUser::where(function ($q) use ($authUser, $userId) {
-            $q->where('blocker_user_id', $authUser->id)->where('blocked_user_id', $userId);
-        })->orWhere(function ($q) use ($authUser, $userId) {
-            $q->where('blocker_user_id', $userId)->where('blocked_user_id', $authUser->id);
-        })->exists();
-
-        if ($isBlocked) {
+        // Check blocked (reusable helper)
+        if ($this->isBlocked($authUser->id, $userId)) {
             return response()->json(['data' => null, 'errors' => [['code' => 'not_found', 'message' => 'Utilisateur non trouvé']]], 404);
         }
 
-        $otherUser = User::findOrFail($userId);
+        $otherUser = User::where('id', $userId)->whereNull('deleted_at')->first();
+        if (! $otherUser) {
+            return response()->json(['data' => null, 'errors' => [['code' => 'not_found', 'message' => 'Utilisateur non trouvé']]], 404);
+        }
 
-        $myCountries = PassportStamp::where('user_id', $authUser->id)->countries()->pluck('country_code')->toArray();
-        $theirCountries = PassportStamp::where('user_id', $userId)->countries()->pluck('country_code')->toArray();
-        $commonCountries = array_values(array_intersect($myCountries, $theirCountries));
+        // P2 fix: SQL INTERSECT instead of PHP array_intersect
+        $commonCountries = DB::select("
+            SELECT country_code FROM passport_stamps
+            WHERE user_id = ? AND stamp_type = 'country'
+            INTERSECT
+            SELECT country_code FROM passport_stamps
+            WHERE user_id = ? AND stamp_type = 'country'
+        ", [$authUser->id, $userId]);
 
-        $myCities = PassportStamp::where('user_id', $authUser->id)->cities()->pluck('city_name')->toArray();
-        $theirCities = PassportStamp::where('user_id', $userId)->cities()->pluck('city_name')->toArray();
-        $commonCities = array_values(array_intersect($myCities, $theirCities));
+        $commonCities = DB::select("
+            SELECT city_name FROM passport_stamps
+            WHERE user_id = ? AND stamp_type = 'city' AND city_name IS NOT NULL
+            INTERSECT
+            SELECT city_name FROM passport_stamps
+            WHERE user_id = ? AND stamp_type = 'city' AND city_name IS NOT NULL
+        ", [$authUser->id, $userId]);
+
+        // Stats via single query per user
+        $myStats = DB::selectOne("
+            SELECT
+                COUNT(*) FILTER (WHERE stamp_type = 'country') as countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'city') as cities
+            FROM passport_stamps WHERE user_id = ?
+        ", [$authUser->id]);
+
+        $theirStats = DB::selectOne("
+            SELECT
+                COUNT(*) FILTER (WHERE stamp_type = 'country') as countries,
+                COUNT(*) FILTER (WHERE stamp_type = 'city') as cities
+            FROM passport_stamps WHERE user_id = ?
+        ", [$userId]);
 
         return response()->json([
             'data' => [
                 'me' => [
                     'total_stamps' => $authUser->total_stamps,
-                    'countries_count' => count($myCountries),
-                    'cities_count' => count($myCities),
+                    'countries_count' => (int) ($myStats->countries ?? 0),
+                    'cities_count' => (int) ($myStats->cities ?? 0),
                 ],
                 'other' => [
                     'id' => $otherUser->id,
                     'name' => $otherUser->name,
                     'username' => $otherUser->username,
                     'total_stamps' => $otherUser->total_stamps,
-                    'countries_count' => count($theirCountries),
-                    'cities_count' => count($theirCities),
+                    'countries_count' => (int) ($theirStats->countries ?? 0),
+                    'cities_count' => (int) ($theirStats->cities ?? 0),
                 ],
                 'common' => [
-                    'countries' => $commonCountries,
-                    'cities' => $commonCities,
+                    'countries' => array_column($commonCountries, 'country_code'),
+                    'cities' => array_column($commonCities, 'city_name'),
                     'countries_count' => count($commonCountries),
                     'cities_count' => count($commonCities),
                 ],
@@ -116,5 +143,17 @@ class PassportController extends Controller
             'meta' => [],
             'errors' => [],
         ]);
+    }
+
+    private function isBlocked(string $userA, string $userB): bool
+    {
+        return DB::selectOne(
+            'SELECT EXISTS(
+                SELECT 1 FROM blocked_users
+                WHERE (blocker_user_id = ? AND blocked_user_id = ?)
+                   OR (blocker_user_id = ? AND blocked_user_id = ?)
+            ) as blocked',
+            [$userA, $userB, $userB, $userA]
+        )->blocked ?? false;
     }
 }
