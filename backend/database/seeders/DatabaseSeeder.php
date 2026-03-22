@@ -2,24 +2,23 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            CountrySeeder::class,
+            LanguageSeeder::class,
+            BadgeSeeder::class,
+            PassportLevelSeeder::class,
+            ServerRegionSeeder::class,
+            AppSettingsSeeder::class,
         ]);
+
+        // NOTE: Geo boundaries (country_boundaries, city_boundaries, regions)
+        // are imported via ogr2ogr shell commands, NOT PHP seeders.
+        // See: prompts/implementation-app/05-SPRINT-1-2-BACKEND-FRONTEND-CORE.md
     }
 }
