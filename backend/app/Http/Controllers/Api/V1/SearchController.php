@@ -14,7 +14,8 @@ class SearchController extends Controller
     {
         $request->validate(['q' => 'required|string|min:2|max:50']);
 
-        $query = $request->q;
+        // H2 fix: escape ILIKE wildcards to prevent enumeration
+        $query = str_replace(['%', '_'], ['\%', '\_'], $request->q);
         $authUser = $request->user();
 
         // Get blocked IDs to exclude

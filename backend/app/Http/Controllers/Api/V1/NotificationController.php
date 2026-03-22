@@ -29,9 +29,17 @@ class NotificationController extends Controller
 
     public function markRead(Request $request, string $notificationId): JsonResponse
     {
+        // H4 fix: graceful 404 instead of exception leak
         $notification = Notification::where('user_id', $request->user()->id)
             ->where('id', $notificationId)
-            ->firstOrFail();
+            ->first();
+
+        if (! $notification) {
+            return response()->json([
+                'data' => null,
+                'errors' => [['code' => 'not_found', 'message' => 'Notification non trouvée']],
+            ], 404);
+        }
 
         $notification->update(['read_at' => now()]);
 

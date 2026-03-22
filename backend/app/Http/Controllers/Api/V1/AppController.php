@@ -30,6 +30,8 @@ class AppController extends Controller
                 'version' => '1.0.0',
                 'timestamp' => now()->toIso8601String(),
             ],
+            'meta' => [],
+            'errors' => [],
         ]);
     }
 }

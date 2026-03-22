@@ -22,9 +22,11 @@ class AuthController extends Controller
             'token' => 'required|string',
         ]);
 
+        $provider = $request->provider;
+
         try {
             /** @var AbstractProvider $driver */
-            $driver = Socialite::driver($request->provider);
+            $driver = Socialite::driver($provider);
             $socialUser = $driver->stateless()->userFromToken($request->token);
         } catch (\Exception $e) {
             return response()->json([
@@ -33,7 +35,15 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $providerIdColumn = $request->provider === 'apple' ? 'apple_id' : 'google_id';
+        // C1 fix: Verify the token actually belongs to the declared provider
+        if (! $socialUser->getId()) {
+            return response()->json([
+                'data' => null,
+                'errors' => [['code' => 'invalid_token', 'message' => 'Token does not match provider']],
+            ], 401);
+        }
+
+        $providerIdColumn = $provider === 'apple' ? 'apple_id' : 'google_id';
 
         $user = User::where($providerIdColumn, $socialUser->getId())->first();
 
@@ -91,7 +101,8 @@ class AuthController extends Controller
             'code' => 'required|string|size:6',
         ]);
 
-        $cached = Cache::get("otp:{$request->email}");
+        // C3 fix: atomic pull prevents race condition (get + delete in one operation)
+        $cached = Cache::pull("otp:{$request->email}");
 
         if (! $cached || $cached !== $request->code) {
             return response()->json([
@@ -99,8 +110,6 @@ class AuthController extends Controller
                 'errors' => [['code' => 'invalid_otp', 'message' => 'Code invalide ou expiré']],
             ], 422);
         }
-
-        Cache::forget("otp:{$request->email}");
 
         $user = User::where('email', $request->email)->first();
 
@@ -145,7 +154,8 @@ class AuthController extends Controller
     {
         $request->validate(['token' => 'required|string']);
 
-        $email = Cache::get("magic:{$request->token}");
+        // C3 fix: atomic pull prevents race condition
+        $email = Cache::pull("magic:{$request->token}");
 
         if (! $email) {
             return response()->json([
@@ -153,8 +163,6 @@ class AuthController extends Controller
                 'errors' => [['code' => 'invalid_link', 'message' => 'Lien invalide ou expiré']],
             ], 422);
         }
-
-        Cache::forget("magic:{$request->token}");
 
         $user = User::where('email', $email)->first();
         if (! $user) {

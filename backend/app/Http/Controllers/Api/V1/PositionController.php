@@ -126,6 +126,11 @@ class PositionController extends Controller
 
         [$swLat, $swLng, $neLat, $neLng] = array_map('floatval', $bbox);
 
+        // H3 fix: validate bbox ranges
+        if ($swLat < -90 || $neLat > 90 || $swLng < -180 || $neLng > 180 || $swLat > $neLat || $swLng > $neLng) {
+            return response()->json(['data' => null, 'errors' => [['code' => 'invalid_bbox', 'message' => 'bbox out of range']]], 422);
+        }
+
         // Note: position_clusters is an aggregated table (no user_id column),
         // so blocked user filtering happens at the individual position level
         // during the clusters:refresh cron, not here.

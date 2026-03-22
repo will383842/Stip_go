@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
 | API Routes — /api/v1
+| C2 fix: UUID constraints on all {id}/{user}/{notification} params
 |--------------------------------------------------------------------------
 */
 
@@ -45,9 +46,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('/users/me', [UserController::class, 'destroy']);
         Route::post('/users/me/export', [UserController::class, 'export'])
             ->middleware('throttle:1,1440');
-        Route::get('/users/{id}/profile', [UserController::class, 'show']);
-        Route::post('/users/{id}/block', [UserController::class, 'block']);
-        Route::delete('/users/{id}/block', [UserController::class, 'unblock']);
+        Route::get('/users/{id}/profile', [UserController::class, 'show'])
+            ->where('id', '[0-9a-f\-]{36}');
+        Route::post('/users/{id}/block', [UserController::class, 'block'])
+            ->where('id', '[0-9a-f\-]{36}');
+        Route::delete('/users/{id}/block', [UserController::class, 'unblock'])
+            ->where('id', '[0-9a-f\-]{36}');
 
         // Positions
         Route::post('/positions', [PositionController::class, 'store']);
@@ -58,6 +62,7 @@ Route::prefix('v1')->group(function () {
         // World Passport
         Route::get('/passport', [PassportController::class, 'index']);
         Route::get('/passport/compare/{user}', [PassportController::class, 'compare'])
+            ->where('user', '[0-9a-f\-]{36}')
             ->middleware('throttle:60,1');
 
         // Reports
@@ -66,7 +71,8 @@ Route::prefix('v1')->group(function () {
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
-        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
+            ->where('notification', '[0-9a-f\-]{36}');
 
         // Search
         Route::get('/search', [SearchController::class, 'index'])
