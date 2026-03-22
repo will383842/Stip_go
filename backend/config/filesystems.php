@@ -60,6 +60,31 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 — public bucket (avatars, exports, stamps)
+        'r2_public' => [
+            'driver' => 's3',
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('CLOUDFLARE_R2_BUCKET_PUBLIC', 'stipme-public'),
+            'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+            'url' => env('CLOUDFLARE_R2_URL'),
+            'use_path_style_endpoint' => false,
+            'throw' => false,
+        ],
+
+        // Cloudflare R2 — private bucket (KYC, moderation, backups)
+        'r2_private' => [
+            'driver' => 's3',
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('CLOUDFLARE_R2_BUCKET_PRIVATE', 'stipme-private'),
+            'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'throw' => false,
+        ],
+
     ],
 
     /*
